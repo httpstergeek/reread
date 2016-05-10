@@ -50,6 +50,9 @@ def main(args):
                 if index == timeindex:
                     if not ('_time' in record):
                         record['_time'] = int(getepoch(item, pattern))
+                else:
+                    if not ('_time' in record):
+                        int(datetime.datetime.now().strftime("%s"))
                 record[header[index]] = item
             results.append(record)
         splunk.Intersplunk.outputStreamResults(results)
