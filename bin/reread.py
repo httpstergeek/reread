@@ -45,7 +45,6 @@ def main(args):
                 timeindex = index
         for row in csvFile:
             record = {}
-            record['_raw'] = row
             for index, item in enumerate(row):
                 if index == timeindex:
                     if not ('_time' in record):
@@ -54,6 +53,7 @@ def main(args):
                     if not ('_time' in record):
                         int(datetime.datetime.now().strftime("%s"))
                 record[header[index]] = item
+            record['_raw'] = json.dumps(record)
             results.append(record)
         splunk.Intersplunk.outputStreamResults(results)
         exit()
