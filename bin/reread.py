@@ -28,13 +28,17 @@ def findtime(field, jbod):
             time = findtime(field, v)
     return time
 
+
+
+
 def main(args):
     option = args[1]
     url = args[2]
-    timefield = args[3]
-    pattern = args[4]
+    timefield = args[3] if len(args) > 3 else None
+    pattern = args[4] if len(args) > 4 else None
+    breakon = args[5] if len(args) > 5 else None
     response = requests.get(url)
-    txt = response.text.splitlines()
+    txt =  response.text.splitlines()
     if option == 'csv':
         csvFile = csv.reader(txt, delimiter=',')
         results = []
@@ -60,15 +64,30 @@ def main(args):
 
     if option == 'json':
         results = []
-        for line in txt:
-            record = json.loads(line)
-            time = findtime(timefield, record)
-            if time:
-                record['_time'] = int(getepoch(time, pattern))
-            else:
-                record['_time'] = int(datetime.datetime.now().strftime("%s"))
-            record['_raw'] = line
-            results.append(record)
+        if breakon:
+            event = ''
+            for line in txt:
+                match = re.match(breakon, line)
+                if match:
+                    event += line.strip(',')
+                    record = json.loads(event)
+                    record['_raw'] = event
+                    record['_time'] = int(datetime.datetime.now().strftime("%s"))
+                    results.append(record)
+                    event = ''
+                else:
+                    event += line
+        else:
+            for line in txt:
+                record = json.loads(line)
+                time = findtime(timefield, record)
+                if time:
+                    record['_time'] = int(getepoch(time, pattern))
+                else:
+                    record['_time'] = int(datetime.datetime.now().strftime("%s"))
+                record['_raw'] = line
+                results.append(record)
+
         splunk.Intersplunk.outputStreamResults(results)
         exit()
 main(sys.argv)
