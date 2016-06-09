@@ -37,6 +37,7 @@ def main(args):
     timefield = args[3] if len(args) > 3 else None
     pattern = args[4] if len(args) > 4 else None
     breakon = args[5] if len(args) > 5 else None
+    cherrypick = args[6] if len(args) > 6 else None
     response = requests.get(url)
     txt =  response.text.splitlines()
     if option == 'csv':
@@ -61,22 +62,21 @@ def main(args):
             results.append(record)
         splunk.Intersplunk.outputStreamResults(results)
         exit()
-
+    # breakon and cherrypick are hacks not ideal, but meet use cases.
     if option == 'json':
         results = []
         if breakon:
-            event = ''
-            for line in txt:
-                match = re.match(breakon, line)
-                if match:
-                    event += line.strip(',')
-                    record = json.loads(event)
-                    record['_raw'] = event
-                    record['_time'] = int(datetime.datetime.now().strftime("%s"))
-                    results.append(record)
-                    event = ''
-                else:
-                    event += line
+            record = json.loads(response.text)
+            record['_raw'] = json.dumps(record)
+            record['_time'] = int(datetime.datetime.now().strftime("%s"))
+            results.append(record)
+        elif cherrypick:
+            record = json.loads(response.text)
+            pick = record[cherrypick]
+            for item in pick:
+                item['_raw'] = json.dumps(item)
+                item['_time'] = int(datetime.datetime.now().strftime("%s"))
+                results.append(item)
         else:
             for line in txt:
                 record = json.loads(line)
